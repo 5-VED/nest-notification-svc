@@ -1,0 +1,91 @@
+syntax = "proto3";
+
+package notification;
+
+service NotificationService {
+  // Single notification (optimized for low latency)
+  rpc SendNotification(SendNotificationRequest) returns (SendNotificationResponse);
+  
+  // Bulk notifications (optimized for high throughput)
+  rpc SendBulkNotifications(SendBulkNotificationsRequest) returns (SendBulkNotificationsResponse);
+  
+  // Streaming for real-time high-volume processing
+  rpc SendNotificationStream(stream SendNotificationRequest) returns (stream SendNotificationResponse);
+  
+  // Batch processing with performance metrics
+  rpc SendBulkNotificationsOptimized(SendBulkNotificationsRequest) returns (SendBulkNotificationsResponse);
+  
+  // Status and management
+  rpc GetNotificationStatus(GetNotificationStatusRequest) returns (GetNotificationStatusResponse);
+  rpc UpdateUserPreferences(UpdateUserPreferencesRequest) returns (UpdateUserPreferencesResponse);
+  
+  // Health check for load balancing
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+message SendNotificationRequest {
+  string userId = 1;
+  string type = 2;
+  string title = 3;
+  string message = 4;
+  string channel = 5;
+  string priority = 6;
+  string scheduledAt = 7;
+  map<string, string> metadata = 8;
+}
+
+message SendNotificationResponse {
+  bool success = 1;
+  string notificationId = 2;
+  string message = 3;
+}
+
+message SendBulkNotificationsRequest {
+  repeated SendNotificationRequest notifications = 1;
+}
+
+message SendBulkNotificationsResponse {
+  bool success = 1;
+  repeated string notificationIds = 2;
+  int32 successCount = 3;
+  int32 failureCount = 4;
+}
+
+message GetNotificationStatusRequest {
+  string notificationId = 1;
+}
+
+message GetNotificationStatusResponse {
+  string status = 1;
+  string sentAt = 2;
+  string failedAt = 3;
+  string errorMessage = 4;
+}
+
+message UpdateUserPreferencesRequest {
+  string userId = 1;
+  string channel = 2;
+  bool enabled = 3;
+}
+
+message UpdateUserPreferencesResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message HealthCheckRequest {
+  string service = 1;
+}
+
+message HealthCheckResponse {
+  enum ServingStatus {
+    UNKNOWN = 0;
+    SERVING = 1;
+    NOT_SERVING = 2;
+  }
+  ServingStatus status = 1;
+  int64 timestamp = 2;
+  int32 queueDepth = 3;
+  int32 activeWorkers = 4;
+  double throughputPerSecond = 5;
+}

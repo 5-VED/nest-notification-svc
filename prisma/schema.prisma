@@ -1,0 +1,146 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  notifications Notification[]
+  userPreferences UserPreference[]
+  deviceTokens   DeviceToken[]
+
+  @@map("users")
+}
+
+model Notification {
+  id          String            @id @default(uuid())
+  userId      String
+  title       String
+  message     String
+  type        NotificationType
+  channel     NotificationChannel
+  status      NotificationStatus @default(PENDING)
+  priority    Priority          @default(NORMAL)
+  metadata    Json?
+  scheduledAt DateTime?
+  sentAt      DateTime?
+  failedAt    DateTime?
+  retryCount  Int               @default(0)
+  errorMessage String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([scheduledAt])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+model UserPreference {
+  id             String   @id @default(uuid())
+  userId         String
+  channel        NotificationChannel
+  enabled        Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, channel])
+  @@map("user_preferences")
+}
+
+model DeviceToken {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String
+  platform  Platform
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, token])
+  @@index([userId])
+  @@map("device_tokens")
+}
+
+model NotificationTemplate {
+  id          String            @id @default(uuid())
+  name        String            @unique
+  type        NotificationType
+  channel     NotificationChannel
+  subject     String?
+  title       String
+  message     String
+  htmlContent String?
+  isActive    Boolean           @default(true)
+  variables   String[]          // Array of variable names like ["userName", "orderId"]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@map("notification_templates")
+}
+
+enum NotificationType {
+  WELCOME
+  ORDER_CONFIRMATION
+  ORDER_SHIPPED
+  ORDER_DELIVERED
+  PAYMENT_SUCCESS
+  PAYMENT_FAILED
+  PASSWORD_RESET
+  EMAIL_VERIFICATION
+  PROMOTIONAL
+  SYSTEM_ALERT
+  SECURITY_ALERT
+}
+
+enum NotificationChannel {
+  EMAIL
+  PUSH
+  SMS
+  IN_APP
+}
+
+enum NotificationStatus {
+  PENDING
+  PROCESSING
+  SENT
+  FAILED
+  CANCELLED
+}
+
+enum Priority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum Platform {
+  IOS
+  ANDROID
+  WEB
+}
