@@ -1,5 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { NotificationChannel, NotificationPriority, NotificationStatus, NotificationType, SendNotificationData } from '../../Common/Types/notification.types';
+import {
+  NotificationChannel,
+  NotificationPriority,
+  NotificationStatus,
+  NotificationType,
+  SendNotificationData,
+} from '../../Common/Types/notification.types';
 import { InjectQueue } from '@nestjs/bull';
 import type { Queue } from 'bull';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -62,19 +68,26 @@ export class NotificationService {
           userId: notificationData.userId,
           title: notificationData.title,
           message: notificationData.message,
-          type: (notificationData.type as NotificationType) as any,
-          channel: ((notificationData.channel || NotificationChannel.EMAIL) as NotificationChannel) as any,
-          priority: ((notificationData.priority || NotificationPriority.NORMAL) as NotificationPriority) as any,
+          type: notificationData.type as NotificationType as any,
+          channel: (notificationData.channel ||
+            NotificationChannel.EMAIL) as NotificationChannel as any,
+          priority: (notificationData.priority ||
+            NotificationPriority.NORMAL) as NotificationPriority as any,
           metadata: notificationData.metadata,
           scheduledAt: notificationData.scheduledAt,
         },
       });
 
       // Get user preferences
-      const userPreferences = await this.getUserPreferences(notificationData.userId);
-      
+      const userPreferences = await this.getUserPreferences(
+        notificationData.userId,
+      );
+
       // Determine channels to send to
-      const channels = this.determineChannels(notificationData, userPreferences);
+      const channels = this.determineChannels(
+        notificationData,
+        userPreferences,
+      );
 
       // Queue jobs for each channel
       const jobs: Promise<any>[] = [];
@@ -89,31 +102,45 @@ export class NotificationService {
 
         switch (channel) {
           case NotificationChannel.EMAIL:
-            jobs.push(this.emailQueue.add('send-email', jobData, {
-              priority: this.getPriority(notificationData.priority),
-              delay: notificationData.scheduledAt ? 
-                new Date(notificationData.scheduledAt).getTime() - Date.now() : 0,
-            }));
+            jobs.push(
+              this.emailQueue.add('send-email', jobData, {
+                priority: this.getPriority(notificationData.priority),
+                delay: notificationData.scheduledAt
+                  ? new Date(notificationData.scheduledAt).getTime() -
+                    Date.now()
+                  : 0,
+              }),
+            );
             break;
           case NotificationChannel.PUSH:
-            jobs.push(this.pushQueue.add('send-push', jobData, {
-              priority: this.getPriority(notificationData.priority),
-              delay: notificationData.scheduledAt ? 
-                new Date(notificationData.scheduledAt).getTime() - Date.now() : 0,
-            }));
+            jobs.push(
+              this.pushQueue.add('send-push', jobData, {
+                priority: this.getPriority(notificationData.priority),
+                delay: notificationData.scheduledAt
+                  ? new Date(notificationData.scheduledAt).getTime() -
+                    Date.now()
+                  : 0,
+              }),
+            );
             break;
           case NotificationChannel.SMS:
-            jobs.push(this.smsQueue.add('send-sms', jobData, {
-              priority: this.getPriority(notificationData.priority),
-              delay: notificationData.scheduledAt ? 
-                new Date(notificationData.scheduledAt).getTime() - Date.now() : 0,
-            }));
+            jobs.push(
+              this.smsQueue.add('send-sms', jobData, {
+                priority: this.getPriority(notificationData.priority),
+                delay: notificationData.scheduledAt
+                  ? new Date(notificationData.scheduledAt).getTime() -
+                    Date.now()
+                  : 0,
+              }),
+            );
             break;
         }
       }
 
       await Promise.all(jobs);
-      this.logger.log(`Queued notification ${notification.id} for ${channels.length} channels`);
+      this.logger.log(
+        `Queued notification ${notification.id} for ${channels.length} channels`,
+      );
 
       return notification;
     } catch (error) {
@@ -182,7 +209,10 @@ export class NotificationService {
           title: 'Order Shipped',
           message: `Your order #${data.orderId} has been shipped`,
           channel: 'PUSH',
-          metadata: { orderId: data.orderId, trackingNumber: data.trackingNumber },
+          metadata: {
+            orderId: data.orderId,
+            trackingNumber: data.trackingNumber,
+          },
         });
         break;
       case 'ORDER_DELIVERED':
@@ -230,10 +260,13 @@ export class NotificationService {
     });
   }
 
-  private determineChannels(notificationData: NotificationData, userPreferences: any[]) {
+  private determineChannels(
+    notificationData: NotificationData,
+    userPreferences: any[],
+  ) {
     const enabledChannels = userPreferences
-      .filter(pref => pref.enabled)
-      .map(pref => pref.channel);
+      .filter((pref) => pref.enabled)
+      .map((pref) => pref.channel);
 
     if (notificationData.channel) {
       return [notificationData.channel];
@@ -242,18 +275,30 @@ export class NotificationService {
     // Default channels based on notification type
     const defaultChannels: Record<string, NotificationChannel[]> = {
       [NotificationType.WELCOME]: [NotificationChannel.EMAIL],
-      [NotificationType.ORDER_CONFIRMATION]: [NotificationChannel.EMAIL, NotificationChannel.PUSH],
-      [NotificationType.ORDER_SHIPPED]: [NotificationChannel.PUSH, NotificationChannel.SMS],
+      [NotificationType.ORDER_CONFIRMATION]: [
+        NotificationChannel.EMAIL,
+        NotificationChannel.PUSH,
+      ],
+      [NotificationType.ORDER_SHIPPED]: [
+        NotificationChannel.PUSH,
+        NotificationChannel.SMS,
+      ],
       [NotificationType.ORDER_DELIVERED]: [NotificationChannel.PUSH],
       [NotificationType.PAYMENT_SUCCESS]: [NotificationChannel.EMAIL],
-      [NotificationType.PAYMENT_FAILED]: [NotificationChannel.EMAIL, NotificationChannel.PUSH],
+      [NotificationType.PAYMENT_FAILED]: [
+        NotificationChannel.EMAIL,
+        NotificationChannel.PUSH,
+      ],
       [NotificationType.PASSWORD_RESET]: [NotificationChannel.EMAIL],
       [NotificationType.EMAIL_VERIFICATION]: [NotificationChannel.EMAIL],
     };
 
-    const typeChannels = defaultChannels[notificationData.type as string] || [NotificationChannel.EMAIL];
-    return typeChannels.filter(channel => 
-      enabledChannels.length === 0 || enabledChannels.includes(channel)
+    const typeChannels = defaultChannels[notificationData.type] || [
+      NotificationChannel.EMAIL,
+    ];
+    return typeChannels.filter(
+      (channel) =>
+        enabledChannels.length === 0 || enabledChannels.includes(channel),
     );
   }
 
@@ -264,10 +309,18 @@ export class NotificationService {
       [NotificationPriority.HIGH]: 10,
       [NotificationPriority.URGENT]: 20,
     };
-    return priorityMap[(priority as NotificationPriority) || NotificationPriority.NORMAL] || 5;
+    return (
+      priorityMap[
+        (priority as NotificationPriority) || NotificationPriority.NORMAL
+      ] || 5
+    );
   }
 
-  async updateNotificationStatus(notificationId: string, status: string, errorMessage?: string) {
+  async updateNotificationStatus(
+    notificationId: string,
+    status: string,
+    errorMessage?: string,
+  ) {
     const updateData: any = {
       status,
       updatedAt: new Date(),

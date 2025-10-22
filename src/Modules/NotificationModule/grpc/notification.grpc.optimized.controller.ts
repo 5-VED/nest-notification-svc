@@ -25,7 +25,7 @@ export class NotificationGrpcOptimizedController {
             priority: notification.priority,
             metadata: notification.metadata,
           });
-          
+
           subject.next({
             success: true,
             notificationId: result.id,
@@ -49,11 +49,11 @@ export class NotificationGrpcOptimizedController {
   @GrpcMethod('NotificationService', 'SendBulkNotificationsOptimized')
   async sendBulkNotificationsOptimized(data: any): Promise<any> {
     const startTime = Date.now();
-    
+
     // Process in parallel batches
     const batchSize = 100;
     const batches: any[] = [];
-    
+
     for (let i = 0; i < data.notifications.length; i += batchSize) {
       const batch = data.notifications.slice(i, i + batchSize);
       batches.push(this.processBatch(batch));
@@ -66,14 +66,16 @@ export class NotificationGrpcOptimizedController {
       success: true,
       totalProcessed: data.notifications.length,
       processingTimeMs: processingTime,
-      throughputPerSecond: Math.round((data.notifications.length / processingTime) * 1000),
+      throughputPerSecond: Math.round(
+        (data.notifications.length / processingTime) * 1000,
+      ),
     };
   }
 
   private async processBatch(notifications: any[]) {
     // Process batch in parallel
     return Promise.allSettled(
-      notifications.map(notification => 
+      notifications.map((notification) =>
         this.notificationService.sendNotification({
           userId: notification.userId,
           type: notification.type,
@@ -82,8 +84,8 @@ export class NotificationGrpcOptimizedController {
           channel: notification.channel,
           priority: notification.priority,
           metadata: notification.metadata,
-        })
-      )
+        }),
+      ),
     );
   }
 }

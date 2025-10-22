@@ -30,7 +30,10 @@ export class TemplateRenderer {
     this.cache.set(key, { value, timestamp: Date.now() });
   }
 
-  render(template: any, variables: Record<string, unknown>): { title: string; message: string; htmlContent?: string } {
+  render(
+    template: any,
+    variables: Record<string, unknown>,
+  ): { title: string; message: string; htmlContent?: string } {
     try {
       let title = template.title;
       let message = template.message;
@@ -48,7 +51,11 @@ export class TemplateRenderer {
       return { title, message, htmlContent };
     } catch (error) {
       this.logger.error('Error rendering template');
-      return { title: template.title, message: template.message, htmlContent: template.htmlContent };
+      return {
+        title: template.title,
+        message: template.message,
+        htmlContent: template.htmlContent,
+      };
     }
   }
 }

@@ -8,9 +8,9 @@ async function bootstrap() {
   app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.GRPC,
     options: {
-      package: "notification",
+      package: 'notification',
       protoPath: join(__dirname, 'proto/notification.proto'),
-      url: "localhost:50051",
+      url: 'localhost:50051',
       // Performance optimizations
       keepalive: {
         keepaliveTimeMs: 30000,
@@ -21,12 +21,12 @@ async function bootstrap() {
         http2MinPingIntervalWithoutDataMs: 300000,
       },
       maxReceiveMessageLength: 4 * 1024 * 1024, // 4MB
-      maxSendMessageLength: 4 * 1024 * 1024,    // 4MB
+      maxSendMessageLength: 4 * 1024 * 1024, // 4MB
       // Enable compression
       compression: 'gzip',
-    }
-  })
-  await app.startAllMicroservices()
+    },
+  });
+  await app.startAllMicroservices();
   await app.listen(process.env.PORT ?? 3000);
 }
 

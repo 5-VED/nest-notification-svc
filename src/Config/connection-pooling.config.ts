@@ -25,7 +25,9 @@ export interface ConnectionPoolConfig {
   };
 }
 
-export const getConnectionPoolConfig = (configService: ConfigService): ConnectionPoolConfig => ({
+export const getConnectionPoolConfig = (
+  configService: ConfigService,
+): ConnectionPoolConfig => ({
   database: {
     maxConnections: configService.get('DB_MAX_CONNECTIONS', 20),
     minConnections: configService.get('DB_MIN_CONNECTIONS', 5),
@@ -70,7 +72,10 @@ export const getPrismaConfig = (configService: ConfigService) => ({
     createRetryIntervalMillis: 200,
   },
   // Query optimization
-  log: configService.get('NODE_ENV') === 'development' ? ['query', 'info', 'warn', 'error'] : ['error'],
+  log:
+    configService.get('NODE_ENV') === 'development'
+      ? ['query', 'info', 'warn', 'error']
+      : ['error'],
   // Performance settings
   transactionOptions: {
     maxWait: configService.get('DB_CONNECTION_TIMEOUT', 30000),
@@ -143,7 +148,7 @@ export const getGrpcConfig = (configService: ConfigService) => ({
   },
   // Message size limits
   maxReceiveMessageLength: 4 * 1024 * 1024, // 4MB
-  maxSendMessageLength: 4 * 1024 * 1024,    // 4MB
+  maxSendMessageLength: 4 * 1024 * 1024, // 4MB
   // Compression
   compression: 'gzip',
 });

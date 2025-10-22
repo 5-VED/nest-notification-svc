@@ -16,7 +16,9 @@ export class PushWorker {
   ) {
     if (!admin.apps.length) {
       admin.initializeApp({
-        credential: admin.credential.cert(require(process.env.FIREBASE_CONFIG || './firebase-key.json')),
+        credential: admin.credential.cert(
+          require(process.env.FIREBASE_CONFIG || './firebase-key.json'),
+        ),
       });
     }
   }
@@ -27,7 +29,10 @@ export class PushWorker {
 
     try {
       // Update status to processing
-      await this.notificationService.updateNotificationStatus(notificationId, NotificationStatus.PROCESSING);
+      await this.notificationService.updateNotificationStatus(
+        notificationId,
+        NotificationStatus.PROCESSING,
+      );
 
       // Get device tokens
       const deviceTokens = await this.channelService.getDeviceTokens(userId);
@@ -36,7 +41,10 @@ export class PushWorker {
       }
 
       // Get template if available
-      const template = await this.channelService.getNotificationTemplate('PUSH', 'PUSH');
+      const template = await this.channelService.getNotificationTemplate(
+        'PUSH',
+        'PUSH',
+      );
       let finalTitle = title;
       let finalMessage = message;
 
@@ -51,29 +59,42 @@ export class PushWorker {
       }
 
       // Send to all device tokens
-      const promises = deviceTokens.map(token =>
+      const promises = deviceTokens.map((token) =>
         admin.messaging().send({
           notification: {
             title: finalTitle,
-            body: finalMessage
+            body: finalMessage,
           },
           data: metadata || {},
           token,
-        })
+        }),
       );
 
       const responses = await Promise.all(promises);
 
       // Update status to sent
-      await this.notificationService.updateNotificationStatus(notificationId, NotificationStatus.SENT);
+      await this.notificationService.updateNotificationStatus(
+        notificationId,
+        NotificationStatus.SENT,
+      );
 
-      this.logger.log(`Push sent for ${userId} to ${deviceTokens.length} devices:`, responses);
+      this.logger.log(
+        `Push sent for ${userId} to ${deviceTokens.length} devices:`,
+        responses,
+      );
       return { success: true };
     } catch (error) {
-      this.logger.error(`Push failed for notification ${notificationId}:`, error);
+      this.logger.error(
+        `Push failed for notification ${notificationId}:`,
+        error,
+      );
 
       // Update status to failed
-      await this.notificationService.updateNotificationStatus(notificationId, NotificationStatus.FAILED, error.message);
+      await this.notificationService.updateNotificationStatus(
+        notificationId,
+        NotificationStatus.FAILED,
+        error.message,
+      );
 
       throw error;
     }

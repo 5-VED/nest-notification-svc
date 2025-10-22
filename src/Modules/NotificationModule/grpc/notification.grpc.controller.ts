@@ -86,7 +86,9 @@ export class NotificationGrpcController {
   ) {}
 
   @GrpcMethod('NotificationService', 'SendNotification')
-  async sendNotification(data: SendNotificationRequest): Promise<SendNotificationResponse> {
+  async sendNotification(
+    data: SendNotificationRequest,
+  ): Promise<SendNotificationResponse> {
     try {
       const notification = await this.notificationService.sendNotification({
         userId: data.userId,
@@ -114,9 +116,11 @@ export class NotificationGrpcController {
   }
 
   @GrpcMethod('NotificationService', 'SendBulkNotifications')
-  async sendBulkNotifications(data: SendBulkNotificationsRequest): Promise<SendBulkNotificationsResponse> {
+  async sendBulkNotifications(
+    data: SendBulkNotificationsRequest,
+  ): Promise<SendBulkNotificationsResponse> {
     const results = await Promise.allSettled(
-      data.notifications.map(notification => 
+      data.notifications.map((notification) =>
         this.notificationService.sendNotification({
           userId: notification.userId,
           type: notification.type,
@@ -125,16 +129,18 @@ export class NotificationGrpcController {
           channel: notification.channel,
           priority: notification.priority,
           metadata: notification.metadata,
-          scheduledAt: notification.scheduledAt ? new Date(notification.scheduledAt) : undefined,
-        })
-      )
+          scheduledAt: notification.scheduledAt
+            ? new Date(notification.scheduledAt)
+            : undefined,
+        }),
+      ),
     );
 
-    const successCount = results.filter(r => r.status === 'fulfilled').length;
-    const failureCount = results.filter(r => r.status === 'rejected').length;
+    const successCount = results.filter((r) => r.status === 'fulfilled').length;
+    const failureCount = results.filter((r) => r.status === 'rejected').length;
     const notificationIds = results
-      .filter(r => r.status === 'fulfilled')
-      .map(r => (r as PromiseFulfilledResult<any>).value.id);
+      .filter((r) => r.status === 'fulfilled')
+      .map((r) => (r as PromiseFulfilledResult<any>).value.id);
 
     return {
       success: failureCount === 0,
@@ -145,7 +151,9 @@ export class NotificationGrpcController {
   }
 
   @GrpcMethod('NotificationService', 'GetNotificationStatus')
-  async getNotificationStatus(data: GetNotificationStatusRequest): Promise<GetNotificationStatusResponse> {
+  async getNotificationStatus(
+    data: GetNotificationStatusRequest,
+  ): Promise<GetNotificationStatusResponse> {
     try {
       // This would need to be implemented in the notification service
       // For now, returning a placeholder
@@ -164,12 +172,14 @@ export class NotificationGrpcController {
   }
 
   @GrpcMethod('NotificationService', 'UpdateUserPreferences')
-  async updateUserPreferences(data: UpdateUserPreferencesRequest): Promise<UpdateUserPreferencesResponse> {
+  async updateUserPreferences(
+    data: UpdateUserPreferencesRequest,
+  ): Promise<UpdateUserPreferencesResponse> {
     try {
       await this.channelService.updateUserPreferences(
         data.userId,
         data.channel,
-        data.enabled
+        data.enabled,
       );
 
       return {
@@ -186,7 +196,9 @@ export class NotificationGrpcController {
 
   // High-performance streaming for real-time processing
   @GrpcStreamMethod('NotificationService', 'SendNotificationStream')
-  sendNotificationStream(data$: Observable<SendNotificationRequest>): Observable<SendNotificationResponse> {
+  sendNotificationStream(
+    data$: Observable<SendNotificationRequest>,
+  ): Observable<SendNotificationResponse> {
     const subject = new Subject<SendNotificationResponse>();
     let processedCount = 0;
     const startTime = Date.now();
@@ -203,9 +215,11 @@ export class NotificationGrpcController {
             channel: notification.channel,
             priority: notification.priority,
             metadata: notification.metadata,
-            scheduledAt: notification.scheduledAt ? new Date(notification.scheduledAt) : undefined,
+            scheduledAt: notification.scheduledAt
+              ? new Date(notification.scheduledAt)
+              : undefined,
           });
-          
+
           processedCount++;
           this.performanceMetrics.totalProcessed++;
 
@@ -224,7 +238,9 @@ export class NotificationGrpcController {
       },
       complete: () => {
         const processingTime = Date.now() - startTime;
-        this.logger.log(`Stream processed ${processedCount} notifications in ${processingTime}ms`);
+        this.logger.log(
+          `Stream processed ${processedCount} notifications in ${processingTime}ms`,
+        );
         subject.complete();
       },
       error: (error) => {
@@ -238,42 +254,56 @@ export class NotificationGrpcController {
 
   // Optimized bulk processing with performance metrics
   @GrpcMethod('NotificationService', 'SendBulkNotificationsOptimized')
-  async sendBulkNotificationsOptimized(data: SendBulkNotificationsRequest): Promise<SendBulkNotificationsResponse> {
+  async sendBulkNotificationsOptimized(
+    data: SendBulkNotificationsRequest,
+  ): Promise<SendBulkNotificationsResponse> {
     const startTime = Date.now();
     const batchSize = 50; // Process in smaller batches for better performance
     const results: any[] = [];
-    
+
     try {
       // Process in parallel batches
       for (let i = 0; i < data.notifications.length; i += batchSize) {
         const batch = data.notifications.slice(i, i + batchSize);
-        const batchPromises = batch.map(notification => 
-          this.notificationService.sendNotification({
-            userId: notification.userId,
-            type: notification.type,
-            title: notification.title,
-            message: notification.message,
-            channel: notification.channel,
-            priority: notification.priority,
-            metadata: notification.metadata,
-            scheduledAt: notification.scheduledAt ? new Date(notification.scheduledAt) : undefined,
-          }).catch(error => ({ error: error.message, notification }))
+        const batchPromises = batch.map((notification) =>
+          this.notificationService
+            .sendNotification({
+              userId: notification.userId,
+              type: notification.type,
+              title: notification.title,
+              message: notification.message,
+              channel: notification.channel,
+              priority: notification.priority,
+              metadata: notification.metadata,
+              scheduledAt: notification.scheduledAt
+                ? new Date(notification.scheduledAt)
+                : undefined,
+            })
+            .catch((error) => ({ error: error.message, notification })),
         );
-        
+
         const batchResults = await Promise.allSettled(batchPromises);
         results.push(...batchResults);
       }
 
-      const successCount = results.filter(r => r.status === 'fulfilled').length;
-      const failureCount = results.filter(r => r.status === 'rejected').length;
+      const successCount = results.filter(
+        (r) => r.status === 'fulfilled',
+      ).length;
+      const failureCount = results.filter(
+        (r) => r.status === 'rejected',
+      ).length;
       const notificationIds = results
-        .filter(r => r.status === 'fulfilled')
-        .map(r => (r as PromiseFulfilledResult<any>).value.id);
+        .filter((r) => r.status === 'fulfilled')
+        .map((r) => (r as PromiseFulfilledResult<any>).value.id);
 
       const processingTime = Date.now() - startTime;
-      const throughput = Math.round((data.notifications.length / processingTime) * 1000);
+      const throughput = Math.round(
+        (data.notifications.length / processingTime) * 1000,
+      );
 
-      this.logger.log(`Bulk processing: ${data.notifications.length} notifications in ${processingTime}ms (${throughput}/sec)`);
+      this.logger.log(
+        `Bulk processing: ${data.notifications.length} notifications in ${processingTime}ms (${throughput}/sec)`,
+      );
 
       return {
         success: failureCount === 0,
@@ -300,20 +330,23 @@ export class NotificationGrpcController {
       const emailWaiting = await this.emailQueue.getWaiting();
       const pushWaiting = await this.pushQueue.getWaiting();
       const smsWaiting = await this.smsQueue.getWaiting();
-      const totalQueueDepth = emailWaiting.length + pushWaiting.length + smsWaiting.length;
+      const totalQueueDepth =
+        emailWaiting.length + pushWaiting.length + smsWaiting.length;
 
       // Get active workers
       const emailActive = await this.emailQueue.getActive();
       const pushActive = await this.pushQueue.getActive();
       const smsActive = await this.smsQueue.getActive();
-      const totalActiveWorkers = emailActive.length + pushActive.length + smsActive.length;
+      const totalActiveWorkers =
+        emailActive.length + pushActive.length + smsActive.length;
 
       // Calculate throughput
       const now = Date.now();
       const timeSinceReset = now - this.performanceMetrics.lastReset;
-      const throughput = timeSinceReset > 0 
-        ? (this.performanceMetrics.totalProcessed / timeSinceReset) * 1000 
-        : 0;
+      const throughput =
+        timeSinceReset > 0
+          ? (this.performanceMetrics.totalProcessed / timeSinceReset) * 1000
+          : 0;
 
       // Reset metrics every minute
       if (timeSinceReset > 60000) {

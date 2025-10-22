@@ -13,11 +13,7 @@ import { MqttWorker } from './workers/mqtt.worker';
 import { PerformanceMonitor } from './monitoring/performance.monitor';
 
 @Module({
-  imports: [
-    BullConfigModule,
-    PrismaModule,
-    forwardRef(() => KafkaModule),
-  ],
+  imports: [BullConfigModule, PrismaModule, forwardRef(() => KafkaModule)],
   controllers: [NotificationController, NotificationGrpcController],
   providers: [
     NotificationService,

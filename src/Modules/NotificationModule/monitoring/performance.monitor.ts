@@ -43,7 +43,8 @@ export class PerformanceMonitor {
     try {
       const now = Date.now();
       const timeElapsed = (now - this.startTime) / 1000; // seconds
-      const throughput = timeElapsed > 0 ? this.totalProcessed / timeElapsed : 0;
+      const throughput =
+        timeElapsed > 0 ? this.totalProcessed / timeElapsed : 0;
 
       // Get queue depths
       const emailWaiting = await this.emailQueue.getWaiting();
@@ -72,18 +73,23 @@ export class PerformanceMonitor {
           total: emailActive.length + pushActive.length + smsActive.length,
         },
         averageProcessingTime: 0, // Would need to track this separately
-        errorRate: this.totalProcessed > 0 ? (this.totalErrors / this.totalProcessed) * 100 : 0,
+        errorRate:
+          this.totalProcessed > 0
+            ? (this.totalErrors / this.totalProcessed) * 100
+            : 0,
       };
 
       this.metrics.push(metrics);
-      
+
       // Keep only last 100 metrics (10 minutes of data)
       if (this.metrics.length > 100) {
         this.metrics = this.metrics.slice(-100);
       }
 
       // Log performance summary
-      this.logger.log(`Performance: ${metrics.throughputPerSecond}/sec, Queues: ${metrics.queueDepths.total}, Workers: ${metrics.activeWorkers.total}, Errors: ${metrics.errorRate.toFixed(2)}%`);
+      this.logger.log(
+        `Performance: ${metrics.throughputPerSecond}/sec, Queues: ${metrics.queueDepths.total}, Workers: ${metrics.activeWorkers.total}, Errors: ${metrics.errorRate.toFixed(2)}%`,
+      );
 
       return metrics;
     } catch (error) {
@@ -105,20 +111,27 @@ export class PerformanceMonitor {
   }
 
   getCurrentMetrics(): PerformanceMetrics | null {
-    return this.metrics.length > 0 ? this.metrics[this.metrics.length - 1] : null;
+    return this.metrics.length > 0
+      ? this.metrics[this.metrics.length - 1]
+      : null;
   }
 
   getAverageThroughput(): number {
     if (this.metrics.length === 0) return 0;
-    
-    const totalThroughput = this.metrics.reduce((sum, metric) => sum + metric.throughputPerSecond, 0);
+
+    const totalThroughput = this.metrics.reduce(
+      (sum, metric) => sum + metric.throughputPerSecond,
+      0,
+    );
     return Math.round(totalThroughput / this.metrics.length);
   }
 
   getPeakThroughput(): number {
     if (this.metrics.length === 0) return 0;
-    
-    return Math.max(...this.metrics.map(metric => metric.throughputPerSecond));
+
+    return Math.max(
+      ...this.metrics.map((metric) => metric.throughputPerSecond),
+    );
   }
 
   isHealthy(): boolean {

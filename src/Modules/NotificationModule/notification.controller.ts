@@ -1,6 +1,24 @@
-import { Controller, Post, Body, Get, Param, Put, Delete, UseGuards, HttpStatus, HttpException, UsePipes, ValidationPipe } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Param,
+  Put,
+  Delete,
+  UseGuards,
+  HttpStatus,
+  HttpException,
+  UsePipes,
+  ValidationPipe,
+} from '@nestjs/common';
 import { NotificationService } from './notification.service';
-import { BulkNotificationsDto, DeviceTokenDto, SendNotificationDto, UpdatePreferencesDto } from '../../Common/Dtos/notification.dto';
+import {
+  BulkNotificationsDto,
+  DeviceTokenDto,
+  SendNotificationDto,
+  UpdatePreferencesDto,
+} from '../../Common/Dtos/notification.dto';
 import { ChannelService } from './services/channel.service';
 import { KafkaProducer } from '../KafkaModule/kafka.producer';
 
@@ -18,10 +36,14 @@ export class NotificationController {
   @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   async sendNotification(@Body() notificationData: SendNotificationDto) {
     // Log admin action
-    console.log(`Admin sending notification to user ${notificationData.userId}`);
+    console.log(
+      `Admin sending notification to user ${notificationData.userId}`,
+    );
     const payload: any = {
       ...notificationData,
-      scheduledAt: notificationData.scheduledAt ? new Date(notificationData.scheduledAt) : undefined,
+      scheduledAt: notificationData.scheduledAt
+        ? new Date(notificationData.scheduledAt)
+        : undefined,
     };
     return this.notificationService.sendNotification(payload);
   }
@@ -31,18 +53,26 @@ export class NotificationController {
   @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   async sendBulkNotifications(@Body() body: BulkNotificationsDto) {
     if (!body.notifications || body.notifications.length === 0) {
-      throw new HttpException('No notifications provided', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        'No notifications provided',
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     if (body.notifications.length > 10000) {
-      throw new HttpException('Too many notifications. Maximum 10,000 per request.', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        'Too many notifications. Maximum 10,000 per request.',
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
-    console.log(`Admin sending bulk notifications: ${body.notifications.length} notifications`);
-    
+    console.log(
+      `Admin sending bulk notifications: ${body.notifications.length} notifications`,
+    );
+
     // Use Kafka for bulk operations
     await this.kafkaProducer.sendBulkNotifications(body.notifications as any);
-    
+
     return {
       success: true,
       message: `${body.notifications.length} notifications queued for processing`,
@@ -62,7 +92,11 @@ export class NotificationController {
     @Param('userId') userId: string,
     @Body() body: UpdatePreferencesDto,
   ) {
-    return this.channelService.updateUserPreferences(userId, body.channel, body.isEnabled);
+    return this.channelService.updateUserPreferences(
+      userId,
+      body.channel,
+      body.isEnabled,
+    );
   }
 
   @Post('user/:userId/device-token')
@@ -71,7 +105,11 @@ export class NotificationController {
     @Param('userId') userId: string,
     @Body() body: DeviceTokenDto,
   ) {
-    return this.channelService.addDeviceToken(userId, body.token, body.platform);
+    return this.channelService.addDeviceToken(
+      userId,
+      body.token,
+      body.platform,
+    );
   }
 
   @Delete('user/:userId/device-token/:token')
@@ -96,7 +134,8 @@ export class NotificationController {
       status: 'healthy',
       timestamp: Date.now(),
       kafka: kafkaMetrics,
-      message: 'Use gRPC for real-time notifications, Kafka for bulk operations',
+      message:
+        'Use gRPC for real-time notifications, Kafka for bulk operations',
     };
   }
 
